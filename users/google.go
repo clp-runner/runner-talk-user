@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"github.com/clp-runner/runner-user/configs"
+	"github.com/clp-runner/runner-user/database"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/session"
 	"io/ioutil"
@@ -14,13 +15,25 @@ import (
 const oauthGoogleUrlAPI = "https://www.googleapis.com/oauth2/v2/userinfo?access_token="
 var store = session.New()
 
+type Google struct {
+	User
+}
+
 func randToken() string {
 	b := make([]byte, 32)
 	rand.Read(b)
 	return base64.StdEncoding.EncodeToString(b)
 }
 
-func Login(c fiber.Ctx) error {
+func NewGoogle() *Google {
+	return &Google{
+		User{
+			Provider: "google",
+		},
+	}
+}
+
+func (u Google) Login(c fiber.Ctx) error {
 	sess, err := store.Get(c)
 	if err != nil {
 		return err
@@ -40,7 +53,7 @@ func Login(c fiber.Ctx) error {
 	return c.JSON(url)
 }
 
-func Callback(c fiber.Ctx) error {
+func (u Google) Callback(c fiber.Ctx) error {
 	sess, err := store.Get(c)
 	if err != nil {
 		return err
@@ -74,12 +87,34 @@ func Callback(c fiber.Ctx) error {
 		return c.SendString("JSON Parsing Failed")
 	}
 
-	// postgresql 에 사용자 정보 저장
+	// postgresql 사용자 정보 저장
+	selectStmt := `select "provider", "email" from "users"`
+	rows, err := database.DBConn.Query(selectStmt)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var provider, email string
+		err = rows.Scan(&provider, &email)
+		if err != nil {
+			return err
+		}
+		// TODO: https://github.com/arg0naut91/authenticateAndGo/blob/master/socialAuth/google.go#L51
+		if provider != u.Provider && email != "" {
+			insertStmt := `insert into "users" ("provider", "user_id", "user_name", "email") values ('test', 'test', 'test', 'test')`
+			_, err = database.DBConn.ExecContext(c.Context(), insertStmt)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	// JWT 생성 후 쿠키 저장
+	// TBD
 
 	return c.SendString(string(userData))
 }
 
-func Logout(c fiber.Ctx) error {
+func (u Google) Logout(c fiber.Ctx) error {
 	return nil
 }

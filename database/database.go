@@ -15,7 +15,7 @@ const (
 	port     = 5432
 	username = "root"
 	password = "password"
-	database = "postgres"
+	database = "root"
 )
 
 type DBConfig struct {
@@ -26,7 +26,7 @@ type DBConfig struct {
 	database string
 }
 
-func NewDBConfig() *DBConfig {
+func newDBConfig() *DBConfig {
 	return &DBConfig{
 		host:     host,
 		port:     port,
@@ -59,7 +59,7 @@ func (c *DBConfig) GetDatabase() string {
 func ConnectToDB() {
 	var err error
 
-	dbConfig := NewDBConfig()
+	dbConfig := newDBConfig()
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		dbConfig.GetHost(), dbConfig.GetPort(), dbConfig.GetUsername(), dbConfig.GetPassword(), dbConfig.GetDatabase())
 	DBConn, err = sql.Open("postgres", psqlInfo)

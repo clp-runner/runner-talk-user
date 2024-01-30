@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"github.com/clp-runner/runner-user/configs"
 	"github.com/clp-runner/runner-user/database"
 	"github.com/clp-runner/runner-user/routes"
@@ -16,6 +17,16 @@ func main()  {
 	}
 	app := routes.Router()
 	database.ConnectToDB()
+	defer func(DBConn *sql.DB) {
+		err = DBConn.Close()
+		if err != nil {
+			log.Fatal("error from close database connection")
+		}
+	}(database.DBConn)
 	configs.GoogleConfig()
-	app.Listen(":3000")
+	err = app.Listen(":3000")
+	if err != nil {
+		log.Fatal("error from listen port")
+		return
+	}
 }

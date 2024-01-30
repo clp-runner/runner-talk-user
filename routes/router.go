@@ -11,7 +11,8 @@ func Router() *fiber.App {
 	app.Get("/", func(c fiber.Ctx) error {
 		return c.SendString("Hello, World 👋!")
 	})
-	app.Get("/login", users.Login)
-	app.Get("/auth/google", users.Callback)
+	google := users.NewGoogle()
+	app.Get("/login", google.Login)
+	app.Get("/auth/google", google.Callback)
 	return app
 }
